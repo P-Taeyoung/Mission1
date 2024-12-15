@@ -91,6 +91,55 @@ public class WifiService {
             preparedStatement.setDouble(1, myLat);
             preparedStatement.setDouble(2, myLnt);
 
+            int affected = preparedStatement.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (preparedStatement != null && !preparedStatement.isClosed()) {
+                    preparedStatement.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                if (connection != null && !connection.isClosed()) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void removeHistory (int id) {
+        String url = "jdbc:mariadb://localhost:3306/mission1";
+        String dbUserId = "testuser1";
+        String dbPassword = "zerobase";
+
+
+        try {
+            Class.forName("org.mariadb.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+
+        try {
+            connection = DriverManager.getConnection(url, dbUserId, dbPassword);
+            String sql =  " delete from history_search " +
+                    " where ID = ? ";
+
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setDouble(1, id);
+
+
+            int affected = preparedStatement.executeUpdate();
+
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
@@ -181,11 +230,11 @@ public class WifiService {
         return myLocations;
     }
 
-    public List<WifiInfoData> nearWifiInfo (double myLat, double myLnt) {
+    public List<WifiNearMe> nearWifiInfo () {
         String url = "jdbc:mariadb://localhost:3306/mission1";
         String dbUserId = "testuser1";
         String dbPassword = "zerobase";
-        List<WifiInfoData> list = new ArrayList<>();
+        List<WifiNearMe> dataList = new ArrayList<>();
 
         try {
             Class.forName("org.mariadb.jdbc.Driver");
@@ -199,15 +248,45 @@ public class WifiService {
 
         try {
             connection = DriverManager.getConnection(url, dbUserId, dbPassword);
-            String sql =  " select count(*) as count " +
-                    " from wifi_info_data ";
+            String sql =  " SELECT FORMAT(ST_Distance_Sphere( " +
+                    "           point(hs.Y_Cd, hs.X_Cd), " +
+                    "           point(wi.lnt, wi.lat) " +
+                    "       ) / 1000, 4) AS distance_km, " +
+                    "        wi.*  " +
+                    " FROM wifi_info_data wi " +
+                    " JOIN ( " +
+                    "    SELECT * " +
+                    "    FROM history_search " +
+                    "    ORDER BY search_datetime DESC " +
+                    "    LIMIT 1  " +
+                    " ) hs ON 1=1  " +
+                    " ORDER BY distance_km " +
+                    " LIMIT 20 " ;
 
             preparedStatement = connection.prepareStatement(sql);
             rs = preparedStatement.executeQuery();
 
 
             while (rs.next()) {
-                 ;
+                 WifiNearMe wifiNearMe = new WifiNearMe();
+                 wifiNearMe.setKm(rs.getString("distance_km"));
+                 wifiNearMe.setMgrNo(rs.getString("mgrNo"));
+                 wifiNearMe.setWrdofc(rs.getString("wrdofc"));
+                 wifiNearMe.setMainNm(rs.getString("mainNm"));
+                 wifiNearMe.setAdres1(rs.getString("adres1"));
+                 wifiNearMe.setAdres2(rs.getString("adres2"));
+                 wifiNearMe.setInstlFloor(rs.getString("instlFloor"));
+                 wifiNearMe.setInstlTy(rs.getString("instlTy"));
+                 wifiNearMe.setInstlMby(rs.getString("instlMby"));
+                 wifiNearMe.setSvcSe(rs.getString("svcSe"));
+                 wifiNearMe.setCmcwr(rs.getString("cmcwr"));
+                 wifiNearMe.setCnstcYear(rs.getString("cnstcYear"));
+                 wifiNearMe.setInoutDoor(rs.getString("inoutDoor"));
+                 wifiNearMe.setRemars3(rs.getString("remars3"));
+                 wifiNearMe.setLnt(rs.getDouble("lnt"));
+                 wifiNearMe.setLat(rs.getDouble("lat"));
+                 wifiNearMe.setDttm(rs.getString("dttm"));
+                 dataList.add(wifiNearMe);
             }
 
         } catch (SQLException e) {
@@ -238,7 +317,7 @@ public class WifiService {
             }
         }
 
-        return list;
+        return dataList;
     }
 
     public int countData() {
@@ -303,4 +382,6 @@ public class WifiService {
 
         return count;
     }
+
+
 }

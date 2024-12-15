@@ -6,11 +6,11 @@
   To change this template use File | Settings | File Templates.
 --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="missionJava.Distance"%>
 <%@ page import="missionJava.MyLocation" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="missionJava.WifiService" %>
+
 
 <html>
 <head>
@@ -20,13 +20,26 @@
             margin-top: 20px;
             margin-bottom: 20px;
         }
+        .info {
+            width: 100%;
+            border: gray 1px solid ;
+            border-collapse: collapse;
+        }
         th {
             background-color: #04AA6D;
+            border: #dddddd 2px solid ;
             color: white;
             height: 50px;
             text-align: center;
         }
+        td{
+            height: 50px;
+            border: #dddddd 2px solid ;
+
+        }
+        tr:nth-child(2n + 1){background-color: lightgray}
     </style>
+
     <script>
         function getMyLocation() {
 
@@ -49,12 +62,17 @@
     <%
         WifiService wifiService = new WifiService();
         List<MyLocation> myLocations = wifiService.historyMyLocation();
+        if ("GET".equalsIgnoreCase(request.getMethod())) {
+            String id = request.getParameter("ID");
+            if (id != null) {
+                wifiService.removeHistory(Integer.parseInt(id));
+            }
+        }
     %>
 <body>
 <h1>와이파이 정보 구하기</h1>
 <a href="index.jsp">홈</a> | <a href="history.jsp">위치 히스토리 목록</a> | <a href="load-wifi.jsp">Open API 와이파이 정보 가져오기</a>
 <table class = "info">
-    <thead>
         <tr>
             <th>ID</th>
             <th>X-좌표</th>
@@ -62,12 +80,11 @@
             <th>조회일자</th>
             <th>비고</th>
         </tr>
-    </thead>
-    <tbody>
-        <tr>
+
             <%
             for (MyLocation myLocation : myLocations) {
             %>
+    <tr>
             <td>
                 <%=myLocation.getId()%>
             </td>
@@ -80,15 +97,17 @@
             <td>
                 <%=myLocation.getDate()%>
             </td>
-            <td>
-                <button>비고</button>
+        <form action="" method="get">
+            <input type="hidden" name="ID" value="<%=myLocation.getId()%>">
+            <td style="text-align: center">
+                <button type="submit">삭제</button>
             </td>
+        </form>
+
+    </tr>
             <%
                 }
             %>
-        </tr>
-    </tbody>
-
 
 </table>
 
